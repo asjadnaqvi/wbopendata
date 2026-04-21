@@ -82,8 +82,14 @@ quietly {
         if ("`indicator2'" == "") {
             local indicator2 "`indicator1'"
         }
+        local _source_id = ""
+        if ("`source'" != "") {
+            local _source_id = word("`source'",1)
+            local source "source=`_source_id'&"
+        }
         if ("`projection'" != "") {
 			local source "source=40&"
+            local _source_id "40"
 		}
 		if ("`date'" != "") {
 			local date1 "&date=`date'"
@@ -174,7 +180,11 @@ quietly {
                 local _ck_date "_`_ck_date'"
             }
             local _ck_src ""
-            if ("`source'" != "") local _ck_src "_src40"
+            if ("`source'" != "") {
+                local _ck_src : subinstr local source "source=" "", all
+                local _ck_src : subinstr local _ck_src "&" "", all
+                local _ck_src "_src`_ck_src'"
+            }
             local _cache_key "ind_`_ck_ind'_`_ck_cty'_`language'`_ck_date'`_ck_src'"
         }
         else if ("`topics'" != "") {
@@ -319,24 +329,6 @@ quietly {
             break
         }
     }
-
-    * Save successful download to data cache
-    if ("`nocache'" == "" & "`_cache_file'" != "") {
-        cap : copy `temp' "`_cache_file'", replace
-        if (_rc == 0) {
-            cap _wbod_dc_manifest_update "`_manifest'" "`_cache_key'.csv"
-            if (_rc != 0) {
-                `noi' di as text "(datacache: manifest update failed, rc=" _rc ")"
-            }
-            else {
-                `noi' di as text "(datacache: saved `_cache_key'.csv)"
-            }
-        }
-        else {
-            `noi' di as text "(datacache: save failed, rc=" _rc ")"
-        }
-    }
-
     } /* end of offline/cache/online branch */
 
     cap : insheet using `temp', `clear' name
@@ -389,17 +381,26 @@ quietly {
 			list ///
 			parameter(indicator?id name source?id) ///
 			offline("`offline'")
+
+        local _meta_line1 = lower("`r(line1)'")
+        local _meta_not_found = (strpos("`_meta_line1'","indicator was not found") > 0 | strpos("`_meta_line1'","invalid format") > 0)
+        local _meta_no_id = (trim("`r(indicator_id2)'") == "")
+        local _meta_no_source = (trim("`r(source_id5)'") == "")
+
+        if ("`_cache_file'" != "") {
+            capture erase "`_cache_file'"
+        }
 			
 			
 			
-		if (strmatch("`r(line1)'","*error*") == 0) & (_rc == 0) {
+        if (strmatch("`r(line1)'","*error*") == 0) & (_rc == 0) & ("`_source_id'" == "" | "`_source_id'" != "`r(source_id5)'") {
 		
 			noi di ""
-			noi di in g "{p 4 4 2} Sorry... but indicator " as result "`r(indicator_id2)'" in g " has been moved to " as result "`r(source_id5)'. {p_end}"
+            noi di in g "{p 4 4 2} Sorry... direct API data download failed for indicator " as result "`r(indicator_id2)'" in g ". Metadata indicates source " as result "`r(source_id5)'. {p_end}"
 			noi di ""
 			noi dis as text `"{p 4 4 2} Please send us an email to obtain more information {browse "mailto:data@worldbank.org, ?subject= wbopendata query error 23 at `c(current_date)' `c(current_time)': https://api.worldbank.org/v2/Indicators/`indicator' "  :clicking here} or writing to:  {p_end}"'
 			noi dis as result "{p 12 4 2} email: " as input "data@worldbank.org  {p_end}"
-			noi dis as result "{p 12 4 2} subject: " as input `"wbopendata query error 23 [`r(indicator_id2)' - `r(name3)'] at `c(current_date)' `c(current_time)': https://api.worldbank.org/v2/Indicators/`indicator'  {p_end}"'
+            noi dis as result "{p 12 4 2} subject: " as input `"wbopendata query error 23 [metadata source hint: `r(indicator_id2)' - `r(name3)'] at `c(current_date)' `c(current_time)': https://api.worldbank.org/v2/Indicators/`indicator'  {p_end}"'
 			noi di ""
 			noi di ""
 			break
@@ -407,10 +408,25 @@ quietly {
 		
 		}
 
-		if strmatch("`r(line1)'","*error*") == 1 | (_rc != 0) {
+        if strmatch("`r(line1)'","*error*") == 1 | (_rc != 0) | ("`_source_id'" != "" & "`_source_id'" == "`r(source_id5)'") {
 
-			noi di ""
-			noi di as err "{p 4 4 2} Sorry... No data was downloaded for " as result "`queryspec2'. {p_end}"
+            if (`_meta_not_found' | (`_meta_no_id' & `_meta_no_source')) {
+                noi di ""
+                noi di as err "{p 4 4 2} Sorry... indicator " as result "`indicator'" as err " was not found in the World Bank API indicator list. {p_end}"
+                noi di ""
+                noi dis as text `"{p 4 4 2} Please verify the indicator code in the API query builder {browse \"https://data.worldbank.org/querybuilder\" :clicking here} or run {bf:wbopendata, search(DT.CUR)} to find valid alternatives. {p_end}"'
+                noi di ""
+                break
+                exit 20
+            }
+
+            noi di ""
+            if ("`r(source_id5)'" != "" & "`r(source_id5)'" != ".") {
+                noi di as err "{p 4 4 2} Sorry... the World Bank API data endpoint returned no downloadable series for indicator " as result "`indicator'" as err ". Metadata indicates source " as result "`r(source_id5)'" as err ". {p_end}"
+            }
+            else {
+                noi di as err "{p 4 4 2} Sorry... the World Bank API data endpoint returned no downloadable series for indicator " as result "`indicator'" as err ". {p_end}"
+            }
 			noi di ""
 			noi dis as text `"{p 4 4 2} (1) Please check your internet connection by {browse "https://data.worldbank.org/" :clicking here}, if does not work please check with your internet provider or IT support, otherwise... {p_end}"'
 			noi dis as text `"{p 4 4 2} (2) Please check your access to the World Bank API by {browse "https://api.worldbank.org/indicator" :clicking here}, if does not work please check with your firewall settings or internet provider or IT support, otherwise...  {p_end}"'
@@ -426,6 +442,23 @@ quietly {
 			exit 20
 			
 		}
+    }
+
+    * Save successful download to data cache only after validating payload shape.
+    if ("`l2'" != "" & "`offline'" == "" & "`nocache'" == "" & `_cache_hit' == 0 & "`_cache_file'" != "") {
+        cap : copy `temp' "`_cache_file'", replace
+        if (_rc == 0) {
+            cap _wbod_dc_manifest_update "`_manifest'" "`_cache_key'.csv"
+            if (_rc != 0) {
+                `noi' di as text "(datacache: manifest update failed, rc=" _rc ")"
+            }
+            else {
+                `noi' di as text "(datacache: saved `_cache_key'.csv)"
+            }
+        }
+        else {
+            `noi' di as text "(datacache: save failed, rc=" _rc ")"
+        }
     }
 
     cap: drop v*

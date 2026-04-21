@@ -312,7 +312,7 @@ program define yaml_read, rclass
                 label variable parent "Parent key"
                 label variable type "Value type"
                 if ("`collapse'" != "") {
-                    _yaml_collapse, fields(`colfields') maxlevel(`maxlevel')
+                    __yaml_collapse, fields(`colfields') maxlevel(`maxlevel')
                 }
             }
         }
@@ -325,7 +325,7 @@ program define yaml_read, rclass
             label variable parent "Parent key"
             label variable type "Value type"
             if ("`collapse'" != "") {
-                _yaml_collapse, fields(`colfields') maxlevel(`maxlevel')
+                __yaml_collapse, fields(`colfields') maxlevel(`maxlevel')
             }
         }
 
@@ -873,7 +873,7 @@ program define yaml_read, rclass
             label variable type "Value type"
 
             if ("`collapse'" != "") {
-                _yaml_collapse, fields(`colfields') maxlevel(`maxlevel')
+                __yaml_collapse, fields(`colfields') maxlevel(`maxlevel')
             }
         }
 
@@ -899,7 +899,7 @@ program define yaml_read, rclass
         label variable type "Value type"
 
         if ("`collapse'" != "") {
-            _yaml_collapse, fields(`colfields') maxlevel(`maxlevel')
+            __yaml_collapse, fields(`colfields') maxlevel(`maxlevel')
         }
 
         if ("`verbose'" != "") {
