@@ -93,7 +93,7 @@ F _/_wbopendata_parameters.yaml
 F _/_wbopendata_indicators.yaml
 F _/_wbopendata_sources.yaml
 F _/_wbopendata_topics.yaml
-F _/__COMPONENT_VERSIONS.yaml
+% F _/__COMPONENT_VERSIONS.yaml     // file not uploaded on GitHub
 f y/yaml.ado
 f y/yaml.sthlp
 f y/yaml_read.ado
