@@ -1,6 +1,6 @@
 ﻿# WBOPENDATA: Stata module to access World Bank databases
 
-W minor patches:
+With minor patches for own applications:
 
 ```stata
 net install wbopendata, from("https://raw.githubusercontent.com/asjadnaqvi/wbopendata/main/src") replace
