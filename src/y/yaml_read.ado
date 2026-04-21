@@ -294,11 +294,11 @@ program define yaml_read, rclass
     if ("`bulk'" != "" & `skip_parse' == 0) {
         if (`use_frame' == 1) {
             frame `frame' {
-                _yaml_mataread using "`using'", `blockscalars'
+                __yaml_mataread using "`using'", `blockscalars'
             }
         }
         else {
-            _yaml_mataread using "`using'", `blockscalars'
+            __yaml_mataread using "`using'", `blockscalars'
         }
 
         * Post-process: clean up and label
